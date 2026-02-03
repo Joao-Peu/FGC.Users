@@ -1,0 +1,6 @@
+@FGC.Users_HostAddress = http://localhost:5081
+
+GET {{FGC.Users_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

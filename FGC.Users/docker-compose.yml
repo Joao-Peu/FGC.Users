@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      SA_PASSWORD: "Your_password123"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+    healthcheck:
+      test: ["CMD-SHELL", " /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"Your_password123\" -Q \"select 1\" "]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  fgc.users:
+    build: .
+    ports:
+      - "5000:80"
+    environment:
+      - ConnectionStrings__Default=Server=sqlserver,1433;Database=FGCUsersDb;User Id=sa;Password=Your_password123;TrustServerCertificate=true;
+      - Jwt__Issuer=fgc.local
+      - Jwt__Audience=fgc.clients
+      - Jwt__Secret=super-secret-key-please-change
+    depends_on:
+      - sqlserver
