@@ -22,7 +22,7 @@ public class JwtTokenGenerator : IJwtTokenGenerator
     {
         var issuer = _configuration.GetValue<string>("Jwt:Issuer") ?? "fgc.local";
         var audience = _configuration.GetValue<string>("Jwt:Audience") ?? "fgc.clients";
-        var secret = _configuration.GetValue<string>("Jwt:Secret") ?? "super-secret-key-please-change";
+        var secret = _configuration.GetValue<string>("Jwt:Key") ?? "super-secret-key-for-dev-environment-only";
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
 
         var claims = new[]
