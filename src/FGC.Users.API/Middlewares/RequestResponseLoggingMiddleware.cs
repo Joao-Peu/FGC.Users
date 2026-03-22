@@ -1,7 +1,11 @@
+using System.Text.RegularExpressions;
+
 namespace FGC.Users.API.Middlewares;
 
-public class RequestResponseLoggingMiddleware
+public partial class RequestResponseLoggingMiddleware
 {
+    private static readonly Regex SensitiveFieldRegex = BuildSensitiveFieldRegex();
+
     private readonly RequestDelegate _next;
     private readonly ILogger<RequestResponseLoggingMiddleware> _logger;
 
@@ -39,6 +43,9 @@ public class RequestResponseLoggingMiddleware
     private static string MaskSensitive(string body)
     {
         if (string.IsNullOrEmpty(body)) return body;
-        return body.Replace("\"password\":\"", "\"password\":\"***");
+        return SensitiveFieldRegex.Replace(body, "\"$1\":\"***\"");
     }
+
+    [GeneratedRegex("\"(password|senha|token|secret|accessToken|refreshToken)\"\\s*:\\s*\"[^\"]*\"", RegexOptions.IgnoreCase)]
+    private static partial Regex BuildSensitiveFieldRegex();
 }

@@ -2,6 +2,57 @@
 
 Microsserviço de cadastro, autenticação e gerenciamento de perfis de usuários, desenvolvido com .NET 8 e ASP.NET Core Web API. Projeto da **Fase 3 do Tech Challenge — PosTech FIAP**.
 
+## Fluxo de Comunicação entre Microsserviços
+
+```mermaid
+graph LR
+    Client([Cliente]) -->|HTTP| APIM[API Gateway]
+    APIM -->|/api/users/**| Users[FGC.Users API]
+    APIM -->|/api/games/**| Games[FCG.Games API]
+
+    Games -->|OrderPlacedEvent| Q1[/order-placed/]
+    Q1 -->|ServiceBusTrigger| Payments[FCG.Payments Function]
+    Payments -->|PaymentProcessedEvent| Q2[/payments-processed/]
+    Q2 -->|BackgroundService| Games
+    Payments -->|PaymentProcessedEvent| Q3[/notifications-payment-processed/]
+    Q3 -->|ServiceBusTrigger| Notifications[FGC.Notifications Function]
+
+    Users --- DB1[(FGCUsersDb)]
+    Games --- DB2[(FCGGamesDb)]
+    Payments --- DB3[(FCGPaymentsDb)]
+
+    Games -.->|Logs & Traces| AI[Application Insights]
+    Users -.->|Logs & Traces| AI
+    Payments -.->|Logs & Traces| AI
+    Notifications -.->|Logs & Traces| AI
+```
+
+## Fluxo de Autenticação
+
+```mermaid
+sequenceDiagram
+    participant C as Cliente
+    participant U as FGC.Users API
+    participant G as FCG.Games API
+    participant DB as SQL Server
+
+    C->>U: POST /api/users/register
+    U->>DB: Cria User (BCrypt hash)
+    U-->>C: 201 Created { id, name, email }
+
+    C->>U: POST /api/auth/login
+    U->>DB: Busca User por email
+    U->>U: Verifica senha (BCrypt)
+    U-->>C: 200 OK { token: "eyJhb..." }
+
+    C->>U: GET /api/users/me (Bearer token)
+    U->>DB: Busca perfil por userId (JWT claim)
+    U-->>C: 200 OK { id, name, email, role }
+
+    C->>G: POST /api/games/{id}/purchase (Bearer token)
+    Note over G: Mesmo JWT emitido pelo Users<br/>é validado pelo Games API
+```
+
 ## Diagrama de Arquitetura
 
 ```mermaid
@@ -49,7 +100,6 @@ graph TB
     GPH --> UR
     UR --> DB
     AS --> DB
-    EP --> SB[/Azure Service Bus\]
 ```
 
 ## Arquitetura
@@ -103,7 +153,14 @@ tests/
 | `Jwt__Key` | Chave secreta para assinar tokens JWT (32+ chars) | `super-secret-key-for-dev-environment-only` |
 | `Jwt__Issuer` | Emissor do token JWT | `fgc.local` |
 | `Jwt__Audience` | Audiência do token JWT | `fgc.clients` |
-| `ServiceBus__ConnectionString` | Azure Service Bus (opcional, usa InMemory se vazio) | — |
+| `ApplicationInsights__ConnectionString` | Application Insights (opcional) | (desabilitado se vazio) |
+
+## CI/CD
+
+Pipeline GitHub Actions (`.github/workflows/ci-cd.yml`):
+
+- **CI** (push + PR na master): restore → build → test
+- **CD** (apenas push na master): build Docker → push ACR → deploy Azure Container App
 
 ## Build & Run
 
@@ -142,6 +199,14 @@ docker run -p 5081:8080 \
 | Validators (CreateUserCommandValidator) | 10 |
 | Domain (User Entity, Password VO) | 10 |
 
+## Observabilidade
+
+- **Serilog** com sinks para Console e Application Insights
+- **CorrelationMiddleware** propaga `x-correlation-id` entre requests
+- **RequestResponseLoggingMiddleware** loga request/response com mascaramento de dados sensíveis
+- **Audit Trail** com snapshots before/after de entidades
+- **Application Insights** para logs, traces e métricas centralizados
+
 ## Tecnologias
 
 - .NET 8.0 / ASP.NET Core Web API
@@ -149,5 +214,4 @@ docker run -p 5081:8080 \
 - FluentValidation
 - BCrypt.Net
 - Serilog + Application Insights
-- Azure Service Bus
 - xUnit + Moq + FluentAssertions
