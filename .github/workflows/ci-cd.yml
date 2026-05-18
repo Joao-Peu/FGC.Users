@@ -48,12 +48,12 @@ jobs:
 
       - name: Diagnose ACR connectivity
         run: |
-          echo "=== ACR Name value ==="
-          echo "ACR: ${{ secrets.ACR_NAME }}"
-          echo "=== DNS lookup ==="
-          nslookup ${{ secrets.ACR_NAME }}.azurecr.io || true
-          echo "=== Curl test ==="
-          curl -v https://${{ secrets.ACR_NAME }}.azurecr.io/v2/ || true
+          echo "=== DNS lookup direto ==="
+          nslookup fcgregistry.azurecr.io || true
+          echo "=== Ping ==="
+          ping -c 2 fcgregistry.azurecr.io || true
+          echo "=== Curl direto ==="
+          curl -v https://fcgregistry.azurecr.io/v2/ || true
 
       - name: Login to ACR via Docker
         run: |
