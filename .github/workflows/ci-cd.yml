@@ -46,7 +46,7 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Diagnose ACR connectivity
+      - name: Diagnose ACR connectivity1
         run: |
           echo "=== DNS lookup direto ==="
           nslookup fcgregistry.azurecr.io || true
