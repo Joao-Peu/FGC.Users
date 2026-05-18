@@ -46,6 +46,15 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Diagnose ACR connectivity
+        run: |
+          echo "=== ACR Name value ==="
+          echo "ACR: ${{ secrets.ACR_NAME }}"
+          echo "=== DNS lookup ==="
+          nslookup ${{ secrets.ACR_NAME }}.azurecr.io || true
+          echo "=== Curl test ==="
+          curl -v https://${{ secrets.ACR_NAME }}.azurecr.io/v2/ || true
+
       - name: Login to ACR via Docker
         run: |
           docker login ${{ secrets.ACR_NAME }}.azurecr.io \
